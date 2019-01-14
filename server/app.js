@@ -8,7 +8,10 @@
  const app =express();
 
 app.use(bodyparser.json());
-mongoose.connect('mongodb://localhost/bbs-data',{ useNewUrlParser: true });
+mongoose.connect('mongodb://127.0.0.1/bbs-data',{ useNewUrlParser: true },(err) => {
+    if (err) throw err;
+    console.log('Successfully connected');
+});
 // app.use(
 //     cors({
 //       origin: [

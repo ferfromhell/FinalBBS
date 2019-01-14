@@ -1,7 +1,9 @@
 const bodyparser = require("body-parser");
+const mongoose = require("mongoose");
 var { check, validationResult } = require("express-validator/check");
 const bcrypt = require("bcrypt");
 const User = require('./models/User');
+const Post = require('./models/Post');
 
 module.exports = function(app){
     const regValidation = [
@@ -56,10 +58,12 @@ module.exports = function(app){
     ];
     function register(req,res){
         var errors = validationResult(req);
-        if(errors.isEmpty()){
+        // console.log(`empty: ${errors.isEmpty()}`);
+        if(!errors.isEmpty()){
             return res.send({errors: errors.mapped()});
         }
         var user = new User(req.body);
+        // console.log(`user: ${user}`)
         user.password = user.hashPassword(user.password);
         user
         .save()
@@ -109,6 +113,59 @@ module.exports = function(app){
             res.send(false);
         }
     }
+    const postValidation = [
+         check("post")
+        .not()
+        .isEmpty()
+        .withMessage("Please write something.")
+    ];
+    
+    function addPost(req, res){
+        var errors = validationResult(req);
+        if (!errors.isEmpty()){
+            return res.send({ errors: errors.mapped() });
+        }
+        var post = new Post(req.body);
+        if (req.session.user) {
+            post.user = req.session.user._id;
+            post
+            .save()
+            .then(post => {
+                res.json(post);
+            })
+            .catch(error => {
+                res.json(error);
+            });
+        }else{
+            return res.send({ error: "You are not logged in!" });
+        }
+    }
+    function showPosts(req, res) {
+        Post.find()
+          .populate("user", ["username", "email"])
+          .sort({ vote: "desc" })
+          .then(post => {
+            res.json(post);
+          })
+          .catch(error => {
+            res.json(error);
+          });
+      }
+    app.get("/api/showposts", showPosts);
+
+    app.get("/api/logout", (req, res) => {
+    req.session.destroy();
+    res.send({ message: "Logged out!" });
+    });
+    app.post("/api/postupvote/:id", (req, res) => {
+        Post.findById(req.params.id).then(function(post) {
+          post.vote = post.vote + 1;
+          post.save().then(function(post) {
+            res.send(post);
+          });
+        });
+      });
+    app.post("/api/addpost", postValidation, addPost);
     app.get("/api/isloggedin", isLoggedIn);
     app.post("/api/login", logValidation, loginUser);
     app.post( '/api/register', regValidation, register);
