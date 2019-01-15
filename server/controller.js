@@ -31,8 +31,8 @@ module.exports = function(app){
           .not()
           .isEmpty()
           .withMessage("Username is required")
-          .isLength({ min: 2 })
-          .withMessage("Username should be at least 2 letters"),
+          .isLength({ min: 5 })
+          .withMessage("Username should be at least 5 letters"),
         check("password")
           .not()
           .isEmpty()
@@ -40,7 +40,7 @@ module.exports = function(app){
           .isLength({ min: 6 })
           .withMessage("Password should be at least 6 characters"),
         check(
-          "password_con",
+          "passwordConf",
           "Password confirmation  is required or should be the same as password"
         ).custom(function(value, { req }) {
           if (value !== req.body.password) {
@@ -52,6 +52,13 @@ module.exports = function(app){
             return User.findOne({ email: value }).then(function(user) {
             if (user) {
                 throw new Error("This email is already in use");
+            }
+            });
+        }),
+        check("username").custom(value => {
+            return User.findOne({ username: value }).then(function(user) {
+            if (user) {
+                throw new Error("This username is already in use");
             }
             });
         })
@@ -109,6 +116,7 @@ module.exports = function(app){
     function isLoggedIn(req, res, next) {
         if (req.session.isLoggedIn) {
             res.send(true);
+            // next();
         } else {
             res.send(false);
         }
