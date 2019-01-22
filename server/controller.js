@@ -79,6 +79,8 @@ module.exports = function(app){
         })
         .catch(err => res.send(err));
     }
+    
+    // LOGIN USER & LOGIN VALIDATION
     const logValidation = [
         check("email")
             .not()
@@ -113,21 +115,24 @@ module.exports = function(app){
         console.log(error);
         });
     }
+    app.post("/api/login", logValidation, loginUser);
+    // 
     function isLoggedIn(req, res, next) {
         if (req.session.isLoggedIn) {
-            res.send(true);
-            // next();
+          res.send(true);
         } else {
-            res.send(false);
+          res.send(false);
         }
-    }
+    };
+    app.get("/api/isloggedin", isLoggedIn);
+    // 
     const postValidation = [
          check("post")
         .not()
         .isEmpty()
         .withMessage("Please write something.")
     ];
-    
+    //  ADD NEW POST
     function addPost(req, res){
         var errors = validationResult(req);
         if (!errors.isEmpty()){
@@ -148,6 +153,9 @@ module.exports = function(app){
             return res.send({ error: "You are not logged in!" });
         }
     }
+    app.post("/api/addpost", postValidation, addPost);
+    
+    //SHOW EXISTING POSTS 
     function showPosts(req, res) {
         Post.find()
           .populate("user", ["username", "email"])
@@ -161,10 +169,7 @@ module.exports = function(app){
       }
     app.get("/api/showposts", showPosts);
 
-    app.get("/api/logout", (req, res) => {
-    req.session.destroy();
-    res.send({ message: "Logged out!" });
-    });
+    // VOTE POST
     app.post("/api/postupvote/:id", (req, res) => {
         Post.findById(req.params.id).then(function(post) {
           post.vote = post.vote + 1;
@@ -173,9 +178,14 @@ module.exports = function(app){
           });
         });
       });
-    app.post("/api/addpost", postValidation, addPost);
-    app.get("/api/isloggedin", isLoggedIn);
-    app.post("/api/login", logValidation, loginUser);
-    app.post( '/api/register', regValidation, register);
-    app.get('/',(req,res) => res.send('bla bla'));
+    
+    
+    app.post( "/api/register", regValidation, register);
+    //app.get('/',(req,res) => res.send('bla bla'));
+    app.get("/api/logout", (req, res) => {
+        req.session.destroy();
+        res.send({ message: "Logged out!" });
+    });
+
 };
+   
